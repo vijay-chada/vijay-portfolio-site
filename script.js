@@ -7,6 +7,23 @@ const LINKS = {
   dribbble: ''
 };
 
+const PORTFOLIO_CONFIG = {
+  company: 'Pragmasoft Solutions',
+  role: 'Website Developer Intern',
+  jobTitle: 'Website Developer',
+  internshipMonths: '6',
+  projectCount: '[X]',
+  technologies: ['React.js', 'JavaScript', 'Git', 'GitHub'],
+  metaDescription: 'Fresher Full Stack Developer building responsive web applications with React.js, JavaScript, Git, and GitHub.'
+};
+
+const ABOUT_SKILLS = [
+  { name: 'Web Development', percent: 95, gradient: ['#06b6d4', '#ec4899'] },
+  { name: 'UI/UX Design', percent: 90, gradient: ['#a855f7', '#ec4899'] },
+  { name: 'Backend Development', percent: 88, gradient: ['#22c55e', '#06b6d4'] },
+  { name: 'Mobile Development', percent: 85, gradient: ['#f97316', '#ef4444'] }
+];
+
 (() => {
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
@@ -143,10 +160,55 @@ const LINKS = {
     });
   };
 
+  const initPortfolioConfig = () => {
+    const config = PORTFOLIO_CONFIG;
+    document.querySelectorAll('[data-config="company"]').forEach((element) => {
+      element.textContent = config.company;
+    });
+    document.querySelectorAll('[data-config="internshipRole"]').forEach((element) => {
+      element.textContent = config.role;
+    });
+    document.querySelectorAll('[data-config="internshipMonths"]').forEach((element) => {
+      element.textContent = config.internshipMonths;
+    });
+    document.querySelectorAll('[data-config="projectCount"]').forEach((element) => {
+      element.dataset.count = config.projectCount;
+      if (element.textContent.trim() === '0' || element.textContent.trim() === '') {
+        element.textContent = config.projectCount;
+      }
+    });
+    document.querySelectorAll('[data-config="internshipMonthsCount"]').forEach((element) => {
+      element.dataset.count = config.internshipMonths;
+      if (element.textContent.trim() === '0' || element.textContent.trim() === '') {
+        element.textContent = config.internshipMonths;
+      }
+    });
+    const metaDescription = document.querySelector('meta[name="description"]');
+    if (metaDescription) metaDescription.content = config.metaDescription;
+    const ogDescription = document.querySelector('meta[property="og:description"]');
+    if (ogDescription) ogDescription.content = config.metaDescription;
+    const structuredScript = document.querySelector('script[type="application/ld+json"]');
+    if (structuredScript) {
+      structuredScript.textContent = JSON.stringify({
+        '@context': 'https://schema.org',
+        '@type': 'Person',
+        name: 'Vijay Krishna Reddy',
+        jobTitle: config.jobTitle,
+        description: config.metaDescription,
+        worksFor: {
+          '@type': 'Organization',
+          name: config.company
+        },
+        knowsAbout: ['React.js', 'JavaScript', 'Git', 'GitHub', 'HTML', 'CSS', 'Responsive Web Design', 'Web Development'],
+        sameAs: ['https://github.com/vijay-chada', 'https://www.linkedin.com/in/vijaykrishnareddy-chada']
+      }, null, 2);
+    }
+  };
+
   const initTyping = () => {
     const roleElement = document.querySelector('.typed-text');
     if (!roleElement) return;
-    const roles = ['Creative Coder', 'Problem Solver', 'Tech Enthusiast', 'Web Developer', 'UI/UX Designer'];
+    const roles = ['Website Developer', 'Frontend Developer', 'React Developer', 'Problem Solver', 'Web Enthusiast'];
     if (reducedMotion) {
       roleElement.textContent = roles[0];
       return;
@@ -203,10 +265,40 @@ const LINKS = {
     revealItems.forEach((element) => observer.observe(element));
   };
 
+  const renderSkillBars = () => {
+    const container = document.querySelector('#about-skill-list');
+    if (!container) return;
+
+    container.innerHTML = ABOUT_SKILLS.map((skill, index) => `
+      <div class="skill-item" data-percent="${skill.percent}" style="--skill-start:${skill.gradient[0]}; --skill-end:${skill.gradient[1]}; --skill-delay:${index * 150}ms;">
+        <div class="skill-label">
+          <span>${skill.name}</span>
+          <span class="skill-percent" data-target="${skill.percent}">0%</span>
+        </div>
+        <div class="skill-track">
+          <div
+            class="skill-fill"
+            role="progressbar"
+            aria-label="${skill.name}"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            aria-valuenow="0"
+            style="--skill-start:${skill.gradient[0]}; --skill-end:${skill.gradient[1]};"
+          ></div>
+        </div>
+      </div>
+    `).join('');
+  };
+
   const initAboutCounters = () => {
     const about = document.querySelector('#about');
     if (!about) return;
+
     const countTo = (element, target, duration) => {
+      if (!Number.isFinite(target)) {
+        element.textContent = element.dataset.count || '0';
+        return;
+      }
       if (reducedMotion) {
         element.textContent = String(target);
         return;
@@ -219,32 +311,57 @@ const LINKS = {
       };
       requestAnimationFrame(update);
     };
-    const animate = () => {
-      document.querySelectorAll('.skill-fill').forEach((bar) => {
-        bar.style.width = bar.dataset.width;
-        const label = bar.closest('.skill-item')?.querySelector('.skill-label span:last-child');
-        const target = Number.parseInt(bar.dataset.width || '0', 10);
-        if (!label) return;
+
+    const animateSkills = () => {
+      document.querySelectorAll('.skill-item').forEach((item, index) => {
+        const fill = item.querySelector('.skill-fill');
+        const percentNode = item.querySelector('.skill-percent');
+        const target = Number(item.dataset.percent || 0);
+        if (!fill || !percentNode) return;
+
         if (reducedMotion) {
-          label.textContent = `${target}%`;
+          fill.style.width = `${target}%`;
+          fill.setAttribute('aria-valuenow', String(target));
+          percentNode.textContent = `${target}%`;
           return;
         }
-        const start = performance.now();
-        const update = (now) => {
-          const progress = Math.min((now - start) / 1500, 1);
-          label.textContent = `${Math.floor(target * (1 - Math.pow(1 - progress, 3)))}%`;
-          if (progress < 1) requestAnimationFrame(update);
-        };
-        requestAnimationFrame(update);
-      });
-      document.querySelectorAll('.count-up').forEach((counter) => {
-        countTo(counter, Number(counter.dataset.count), 2000);
+
+        setTimeout(() => {
+          const start = performance.now();
+          const duration = 1200;
+          const tick = (now) => {
+            const progress = Math.min((now - start) / duration, 1);
+            const eased = 1 - Math.pow(1 - progress, 3);
+            const current = Math.round(target * eased);
+            fill.style.width = `${current}%`;
+            fill.setAttribute('aria-valuenow', String(current));
+            percentNode.textContent = `${current}%`;
+            if (progress < 1) requestAnimationFrame(tick);
+          };
+          requestAnimationFrame(tick);
+        }, index * 150);
       });
     };
+
+    renderSkillBars();
+
+    const animate = () => {
+      animateSkills();
+      document.querySelectorAll('.count-up').forEach((counter) => {
+        const target = Number(counter.dataset.count);
+        if (!Number.isFinite(target)) {
+          counter.textContent = counter.dataset.count || '0';
+          return;
+        }
+        countTo(counter, target, 2000);
+      });
+    };
+
     if (reducedMotion || !('IntersectionObserver' in window)) {
       animate();
       return;
     }
+
     const observer = new IntersectionObserver((entries, activeObserver) => {
       if (!entries.some((entry) => entry.isIntersecting)) return;
       animate();
@@ -440,7 +557,7 @@ const LINKS = {
         title: 'E-Commerce Platform', category: 'Web Development',
         image: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=900&q=80',
         overview: 'A fast, conversion-focused storefront that makes browsing and purchasing feel effortless. The experience pairs a responsive product catalog with a streamlined checkout and dependable operations during traffic peaks.',
-        stats: [{ value: '+98%', label: 'UPTIME', color: '#4ade80' }, { value: '0.4s', label: 'LOAD SPEED', color: '#38bdf8' }],
+        stats: [{ value: '6', label: 'FEATURES', color: '#4ade80' }, { value: 'React + Next', label: 'STACK', color: '#38bdf8' }],
         challenge: 'The original shopping flow made it difficult to find relevant products, and slow page responses increased the chance that customers would abandon their carts. The platform also needed to remain reliable during promotions and sudden demand spikes.',
         solution: 'A component-driven storefront, optimized rendering, and edge caching make browsing feel immediate. A simplified checkout reduces unnecessary steps, while resilient inventory and session handling keep the experience consistent under load.',
         tech: ['React 18', 'Next.js 14', 'Tailwind CSS', 'Redis Edge'], liveUrl: '', sourceUrl: LINKS.github
@@ -449,7 +566,7 @@ const LINKS = {
         title: 'Task Management App', category: 'SaaS',
         image: 'https://images.unsplash.com/photo-1611224923853-80b023f02d71?auto=format&fit=crop&w=900&q=80',
         overview: 'A shared workspace for teams to plan projects, coordinate work, and keep decisions close to the tasks they affect. Live updates help everyone work from the same current view without repeatedly refreshing.',
-        stats: [{ value: '<100ms', label: 'SYNC', color: '#38bdf8' }, { value: '+40%', label: 'PRODUCTIVITY', color: '#c084fc' }],
+        stats: [{ value: '5', label: 'FEATURES', color: '#38bdf8' }, { value: 'Next.js + SQL', label: 'STACK', color: '#c084fc' }],
         challenge: 'Distributed teams were tracking work across disconnected tools, creating stale task lists and missed handoffs. Frequent collaboration also put pressure on the application to synchronize edits quickly without overwriting teammates’ changes.',
         solution: 'The app organizes work into clear projects and focused task views, with live events broadcasting updates as they happen. Optimistic interactions keep common actions responsive, while persistent records preserve history and team accountability.',
         tech: ['Next.js', 'WebSockets', 'PostgreSQL', 'Prisma'], liveUrl: '', sourceUrl: LINKS.github
@@ -458,7 +575,7 @@ const LINKS = {
         title: 'Finance Tracker', category: 'FinTech',
         image: 'https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&w=900&q=80',
         overview: 'A friendly personal finance dashboard that turns transaction history into understandable spending insights. Clear summaries and flexible views help people make informed decisions without needing accounting expertise.',
-        stats: [{ value: '50K+', label: 'TRANSACTIONS', color: '#4ade80' }, { value: '99.9%', label: 'ACCURACY', color: '#22d3ee' }],
+        stats: [{ value: '5', label: 'FEATURES', color: '#4ade80' }, { value: 'Vue + Charts', label: 'STACK', color: '#22d3ee' }],
         challenge: 'Raw transaction feeds are noisy, inconsistent, and difficult to interpret. Users needed trustworthy totals, useful categories, and clear visual summaries while maintaining confidence that calculations represented their actual activity.',
         solution: 'The tracker normalizes transactions, presents categorized trends in accessible charts, and keeps totals consistent across time ranges. Thoughtful empty states and concise explanations make financial patterns easier to understand and act on.',
         tech: ['Vue.js', 'Chart.js', 'Node.js', 'MongoDB'], liveUrl: '', sourceUrl: LINKS.github
@@ -467,7 +584,7 @@ const LINKS = {
         title: 'Social Network Platform', category: 'Social',
         image: 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&w=900&q=80',
         overview: 'A community-first social platform built around interest groups, meaningful conversations, and a dependable real-time messaging experience. Members can discover people and participate without the interface getting in their way.',
-        stats: [{ value: '20K+', label: 'USERS', color: '#c084fc' }, { value: 'Live', label: 'REAL-TIME CHAT', color: '#38bdf8' }],
+        stats: [{ value: '6', label: 'FEATURES', color: '#c084fc' }, { value: 'MERN Stack', label: 'STACK', color: '#38bdf8' }],
         challenge: 'A growing community needs more than a feed: members need to find relevant groups, understand conversations, and trust that messages arrive in order. The platform had to scale activity while avoiding a noisy, hard-to-navigate experience.',
         solution: 'Focused community spaces and clear conversation threading make discovery more intentional. Real-time messaging updates active discussions instantly, while a responsive interface keeps group activity usable across screen sizes.',
         tech: ['MongoDB', 'Express', 'React', 'Node.js', 'Socket.io'], liveUrl: '', sourceUrl: LINKS.github
@@ -476,7 +593,7 @@ const LINKS = {
         title: 'AI Chatbot Assistant', category: 'AI/ML',
         image: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&w=900&q=80',
         overview: 'A conversational support assistant designed to understand common questions, respond with useful guidance, and hand off ambiguous requests when a person is better equipped to help.',
-        stats: [{ value: '92%', label: 'INTENT ACCURACY', color: '#c084fc' }, { value: '1.2s', label: 'RESPONSE', color: '#38bdf8' }],
+        stats: [{ value: '3', label: 'CORE FLOWS', color: '#c084fc' }, { value: 'Python + NLP', label: 'STACK', color: '#38bdf8' }],
         challenge: 'Support teams needed a faster way to resolve routine questions without trapping customers in irrelevant automated replies. The assistant had to recognize intent reliably, keep response times low, and be clear when confidence was limited.',
         solution: 'A focused intent model routes common requests to concise, reviewed responses. The API separates inference from conversation handling, and confidence checks provide a smooth path to human support when a question needs more context.',
         tech: ['Python', 'TensorFlow', 'FastAPI', 'NLP'], liveUrl: '', sourceUrl: LINKS.github
@@ -485,7 +602,7 @@ const LINKS = {
         title: 'Fitness Tracking App', category: 'Health',
         image: 'https://images.unsplash.com/photo-1517836357463-d25dfeac3438?auto=format&fit=crop&w=900&q=80',
         overview: 'A mobile companion for recording workouts, building healthy routines, and celebrating gradual progress. Simple session logging and useful summaries help users stay consistent without turning exercise into a chore.',
-        stats: [{ value: '10K+', label: 'DOWNLOADS', color: '#4ade80' }, { value: '4.8', label: 'RATING', color: '#fbbf24' }],
+        stats: [{ value: '4', label: 'TRACKING FEATURES', color: '#4ade80' }, { value: 'React Native', label: 'STACK', color: '#fbbf24' }],
         challenge: 'Fitness plans are difficult to sustain when tracking takes longer than the workout or progress feels invisible. Users needed quick logging, reliable access to their history, and encouragement that supported personal goals rather than comparison.',
         solution: 'Fast workout entry, clear progress summaries, and reminders designed around user preferences make healthy routines easier to maintain. A mobile-first interface keeps the key actions accessible before, during, and after training.',
         tech: ['React Native', 'Firebase', 'Redux'], liveUrl: '', sourceUrl: LINKS.github
